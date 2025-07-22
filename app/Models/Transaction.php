@@ -27,7 +27,7 @@ class Transaction extends Model
 
     }
 
-    public function getTransactions(string $filePath, ?callable $transactionHandler = null): array
+    public function getTransactionsCsv(string $filePath, ?callable $transactionHandler = null): array
     {
         if (! file_exists($filePath)) {
             throw new \Exception('File "' . $filePath . '" does not exist.');
@@ -49,5 +49,43 @@ class Transaction extends Model
         }
 
         return $transactions;
+    }
+
+    public function getTransactionsDB(): array
+    {
+        $stmt = $this->db->query('SELECT * FROM transactions');
+        $transactions = $stmt->fetchAll();
+        return $transactions;
+    }
+
+    public function extractTransaction(array $transactionRow): array
+    {
+        [$date, $checkNumber, $description, $amount] = $transactionRow;
+
+        $amount = (float) str_replace(['$', ','], '', $amount);
+
+        return [
+            'date'        => $date,
+            'checkNumber' => $checkNumber,
+            'description' => $description,
+            'amount'      => $amount,
+        ];
+    }
+
+    public function calculateTotals(array $transactions): array
+    {
+        $totals = ['netTotal' => 0, 'totalIncome' => 0, 'totalExpense' => 0];
+
+        foreach ($transactions as $transaction) {
+            $totals['netTotal'] += $transaction['amount'];
+
+            if ($transaction['amount'] >= 0) {
+                $totals['totalIncome'] += $transaction['amount'];
+            } else {
+                $totals['totalExpense'] += $transaction['amount'];
+            }
+        }
+
+        return $totals;
     }
 }

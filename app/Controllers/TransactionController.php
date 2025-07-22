@@ -17,7 +17,20 @@ class TransactionController
     }
     public function index(): View
     {
-        return View::make('index');
+        try {
+            $transactions = $this->transactionModel->getTransactionsDB();
+            if (empty($transactions)) {
+                throw new Exception('No transactions found.');
+            }
+
+            $totals = $this->transactionModel->calculateTotals($transactions);
+            return View::make('transactions/index', [
+                'transactions' => $transactions,
+                'totals' => $totals,
+            ]);
+        } catch (Exception $e) {
+            throw new Exception('Error fetching transactions: ' . $e->getMessage());
+        }
     }
 
     public function upload(): View
@@ -31,17 +44,17 @@ class TransactionController
         $fileName = $_FILES['transactions']['name'];
         move_uploaded_file($_FILES['transactions']['tmp_name'], $filePath);
 
-        $transactions = $this->transactionModel->getTransactions($filePath, function ($transaction) {
+        $transactions = $this->transactionModel->getTransactionsCsv($filePath, function ($transaction) {
             return [
                 'transaction_date' => date('Y-m-d H:i:s', strtotime($transaction[0])),
                 'check_number' => $transaction[1],
                 'description' => $transaction[2],
-                'amount' => $transaction[3],
+                'amount' => (float) str_replace(['$', ','], '', $transaction[3]),
             ];
         });
 
         $storeTransactions = $this->transactionModel->storeTransaction($transactions);
-        header('Location: /');
+        header('Location: /transactions');
         exit;
     }
 }

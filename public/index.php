@@ -15,11 +15,15 @@ $dotenv->load();
 
 define('STORAGE_PATH', __DIR__ . '/../storage');
 define('VIEW_PATH', __DIR__ . '/../views');
+define('APP_PATH',  __DIR__ . '/../app');
+
+require APP_PATH . '/helpers.php';
 
 $router = new Router();
 
 $router
     ->get('/', [HomeController::class, 'index'])
+    ->get('/transactions', [TransactionController::class, 'index'])
     ->get('/transactions/upload',[TransactionController::class, 'upload'])
     ->post('/transactions/upload', [TransactionController::class, 'store']);
 
